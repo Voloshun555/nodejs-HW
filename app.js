@@ -23,7 +23,6 @@ app.use((err, req, res, next) => {
   res.status(status).json({ message });
 });
 
-
 module.exports = app;
 
 // z4CYyKzniR1O7dcn
