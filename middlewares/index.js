@@ -1,2 +1,4 @@
 const validateBody = require('./validateBody')
-module.exports = {validateBody}
+const isValidId = require("./isValidId")
+const favoriteValidateStatus = require("./validateFavoriteSatus")
+module.exports = {validateBody, isValidId, favoriteValidateStatus}
