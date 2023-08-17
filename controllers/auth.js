@@ -1,9 +1,16 @@
 const { User } = require("../models/user");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const gravatar = require("gravatar");
+const path = require("path");
+const fs = require("fs/promises");
+const Jimp = require("jimp");
+
 const { SECRET_KEY } = process.env;
 
 const { ctrl, HttpError } = require("../helpers");
+
+const avatarDir = path.join(__dirname, "../", "public", "avatars");
 
 const register = async (req, res) => {
   const { email, password } = req.body;
@@ -13,7 +20,13 @@ const register = async (req, res) => {
     throw HttpError(409, "Email in use");
   }
   const hassPassword = await bcrypt.hash(password, 10);
-  const newUser = await User.create({ ...req.body, password: hassPassword });
+  const avatarURL = gravatar.url(email);
+
+  const newUser = await User.create({
+    ...req.body,
+    password: hassPassword,
+    avatarURL,
+  });
 
   res.status(201).json({
     user: {
@@ -49,10 +62,10 @@ const login = async (req, res) => {
 };
 
 const getCurrent = async (req, res) => {
-  const { email, subscription} = req.user;
+  const { email, subscription } = req.user;
   res.json({
     email,
-    subscription
+    subscription,
   });
 };
 
@@ -81,10 +94,33 @@ const changeSubscription = async (req, res) => {
   });
 };
 
+const updateAvatar = async (req, res) => {
+  const { _id } = req.user;
+  const { path: tempUpload, originalname } = req.file;
+  Jimp.read(tempUpload)
+  .then((avatar) => {
+    return avatar
+      .resize(250, 250) // resize
+      .write(resultUpload); // save
+  })
+  .catch((err) => {
+    console.error(err);
+  });
+  const fileName = `${_id}_${originalname}`
+  const resultUpload = path.join(avatarDir, fileName);
+  await fs.rename(tempUpload, resultUpload);
+  const avatarURL = path.join("avatars", fileName);
+  await User.findByIdAndUpdate(_id, { avatarURL });
+  res.json({
+    avatarURL
+  })
+};
+
 module.exports = {
   register: ctrl(register),
   login: ctrl(login),
   getCurrent: ctrl(getCurrent),
   logout: ctrl(logout),
   changeSubscription: ctrl(changeSubscription),
+  updateAvatar: ctrl(updateAvatar),
 };
